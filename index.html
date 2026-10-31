@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Placar da Noite do Oscar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: cabeçalho com fase e resumo, depois grade de cartões, um por categoria. Tema único escuro (gala). */
+  :root {
+    --bg: #0a0907;
+    --surface: #16140f;
+    --surface-high: #211d16;
+    --line: rgba(247, 240, 222, 0.09);
+    --ivory: #f7f0de;
+    --muted: rgba(247, 240, 222, 0.56);
+    --gold: #d4ad5c;
+    --gold-light: #fae19a;
+    --gold-deep: #85612a;
+    --live: #eb6154;
+    --gold-gradient: linear-gradient(120deg, var(--gold-light), var(--gold) 45%, var(--gold-deep) 75%, var(--gold));
+    --display: "Playfair Display", "New York", Georgia, serif;
+    --body: "Manrope", -apple-system, "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(ellipse 70% 40% at 50% -5%, rgba(212, 173, 92, 0.18), transparent 70%),
+      var(--bg);
+    background-attachment: fixed;
+    color: var(--ivory);
+    font: 15px/1.5 var(--body);
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding-block: 36px 64px;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+    display: grid;
+    gap: 28px;
+  }
+
+  /* Cabeçalho */
+  header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 20px; }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+  h1 {
+    margin: 6px 0 0;
+    font: 700 clamp(32px, 5vw, 48px)/1.05 var(--display);
+    background: var(--gold-gradient);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-wrap: balance;
+  }
+  .status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 14px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    border: 1px solid var(--line); background: var(--surface);
+  }
+  .pill.phase { border-color: rgba(212, 173, 92, 0.5); color: var(--gold-light); }
+  .pill.live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); animation: pulse 1.2s ease-in-out infinite; }
+  .pill.live.paused .dot { background: var(--muted); animation: none; }
+  .updated { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  @keyframes pulse { 50% { opacity: 0.35; transform: scale(0.8); } }
+
+  /* Resumo */
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .stat { padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+  .stat .label { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .stat .value { margin-top: 4px; font: 700 26px/1.2 var(--display); color: var(--ivory); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .stat .value small { font: 500 13px var(--body); color: var(--muted); }
+
+  /* Controles */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .segmented { display: inline-flex; padding: 4px; gap: 4px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+  .segmented button {
+    font: 600 13px var(--body); color: var(--muted);
+    padding: 8px 16px; border-radius: 999px; border: 0; background: transparent; cursor: pointer;
+  }
+  .segmented button[aria-pressed="true"] { background: var(--gold-gradient); color: var(--bg); }
+  .segmented button:focus-visible, .copy:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+  .hint { font-size: 13px; color: var(--muted); }
+
+  /* Cartões de categoria */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+  @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
+  .card { padding: 20px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 14px; align-content: start; min-width: 0; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .card-head h2 { margin: 0; font: 700 21px/1.2 var(--display); }
+  .card-head .count { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rows { display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; }
+  .row { display: grid; grid-template-columns: 22px 1fr auto; gap: 4px 10px; align-items: center; padding: 6px 8px; margin: 0 -8px; border-radius: 10px; transition: background 0.6s; }
+  .row .rank { font: 700 15px var(--display); color: var(--muted); text-align: center; }
+  .row.leader .rank { color: var(--gold-light); }
+  .row .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+  .row.leader .name { color: var(--gold-light); }
+  .row .votes { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .row .votes small { font-weight: 500; color: var(--muted); margin-left: 4px; }
+  .row .bar { grid-column: 2 / 4; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .row .bar span { display: block; height: 100%; border-radius: 3px; background: var(--gold-gradient); transition: width 0.8s cubic-bezier(.2,.8,.2,1); }
+  .row:not(.leader) .bar span { opacity: 0.55; }
+  .tag { margin-left: 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); border: 1px solid rgba(212,173,92,.45); border-radius: 999px; padding: 1px 7px; vertical-align: 2px; }
+  .tag.tie { color: var(--live); border-color: rgba(235, 97, 84, 0.5); }
+  .row.bump { background: rgba(250, 225, 154, 0.12); }
+  .cutoff { border: 0; border-top: 1px dashed rgba(212, 173, 92, 0.35); margin: 2px 0; }
+  .more { font-size: 13px; color: var(--muted); }
+  .empty { font-size: 14px; color: var(--muted); padding: 18px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; }
+
+  /* Comandos de fase */
+  .admin { padding: 20px; border-radius: 20px; background: var(--surface); border: 1px solid rgba(212, 173, 92, 0.25); display: grid; gap: 12px; }
+  .admin h3 { margin: 0; font: 700 19px var(--display); }
+  .admin p { margin: 0; color: var(--muted); font-size: 14px; max-width: 70ch; }
+  .cmds { display: grid; gap: 8px; }
+  .cmd { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .cmd span { font-size: 13px; color: var(--muted); min-width: 170px; }
+  .cmd code { flex: 1 1 260px; min-width: 0; overflow-x: auto; white-space: nowrap; font: 13px ui-monospace, "SF Mono", Menlo, monospace; padding: 9px 12px; border-radius: 10px; background: var(--surface-high); color: var(--gold-light); }
+  .copy { font: 600 12px var(--body); padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(212,173,92,.5); background: transparent; color: var(--gold-light); cursor: pointer; }
+
+  .error { padding: 12px 16px; border-radius: 12px; background: rgba(235, 97, 84, 0.12); border: 1px solid rgba(235, 97, 84, 0.4); font-size: 14px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pill.live .dot { animation: none; }
+    .row, .row .bar span { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Painel do administrador</div>
+      <h1>Placar da Noite do Oscar</h1>
+    </div>
+    <div class="status">
+      <span class="pill phase" id="phase">Carregando…</span>
+      <span class="pill live" id="live"><span class="dot"></span>Ao vivo</span>
+      <span class="updated" id="updated"></span>
+    </div>
+  </header>
+
+  <div class="error" id="error" hidden></div>
+
+  <section class="summary" aria-label="Resumo">
+    <div class="stat"><div class="label" id="totalLabel">Registros</div><div class="value" id="total">—</div></div>
+    <div class="stat"><div class="label">Categorias com votos</div><div class="value" id="covered">—</div></div>
+    <div class="stat"><div class="label">Disputa mais acirrada</div><div class="value" id="closest">—</div></div>
+  </section>
+
+  <div class="toolbar">
+    <div class="segmented" role="group" aria-label="O que mostrar">
+      <button type="button" id="modeAuto" aria-pressed="true">Fase atual</button>
+      <button type="button" id="modeNomination" aria-pressed="false">Indicações</button>
+      <button type="button" id="modeFinal" aria-pressed="false">Votação final</button>
+    </div>
+    <span class="hint">Atualiza a cada 3 segundos.</span>
+  </div>
+
+  <main class="grid" id="grid" aria-live="polite"></main>
+
+  <section class="admin">
+    <h3>Trocar a fase</h3>
+    <p>Por segurança, esta página só lê dados. Para mudar a fase, copie o comando e rode no SQL Editor do Supabase. Os apps abertos mudam de tela sozinhos em poucos segundos.</p>
+    <div class="cmds">
+      <div class="cmd"><span>Reabrir indicações</span><code>update app_state set phase = 'nomination';</code><button class="copy" type="button">Copiar</button></div>
+      <div class="cmd"><span>Abrir votação final</span><code>update app_state set phase = 'final';</code><button class="copy" type="button">Copiar</button></div>
+      <div class="cmd"><span>Revelar vencedores</span><code>update app_state set phase = 'closed';</code><button class="copy" type="button">Copiar</button></div>
+    </div>
+  </section>
+</div>
+
+<script>
+  // Chave pública (publishable): só lê as views de ranking, protegidas por RLS.
+  const SUPABASE_URL = "https://ohbooijawjzlyxencccy.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_kaNWCgdWp-6xFsb1vlxYTQ__cL94_YV";
+  const REFRESH_MS = 3000;
+  const MAX_ROWS = 8;
+  const PHASE_LABEL = { nomination: "Indicações", final: "Votação final", closed: "Resultado revelado" };
+
+  const $ = (id) => document.getElementById(id);
+  let mode = "auto";
+  let previous = new Map();
+  let timer = null;
+
+  async function get(path) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`Supabase respondeu ${res.status}`);
+    return res.json();
+  }
+
+  async function load() {
+    const [categories, state, nominations, finalists, votes] = await Promise.all([
+      get("categories?select=id,name,sort_order&order=sort_order"),
+      get("app_state?select=phase,finalists_per_category"),
+      get("nomination_ranking?select=*"),
+      get("finalists?select=*"),
+      get("vote_ranking?select=*"),
+    ]);
+    return { categories, state: state[0] ?? { phase: "nomination", finalists_per_category: 5 }, nominations, finalists, votes };
+  }
+
+  function byVotes(a, b) { return b.votes - a.votes || a.nominee.localeCompare(b.nominee, "pt-BR"); }
+
+  function rankingFor(data, view, categoryId) {
+    if (view === "nomination") {
+      return data.nominations.filter((r) => r.category_id === categoryId).sort(byVotes);
+    }
+    const counts = new Map(data.votes.filter((v) => v.category_id === categoryId).map((v) => [v.nominee, v.votes]));
+    return data.finalists
+      .filter((f) => f.category_id === categoryId)
+      .map((f) => ({ category_id: categoryId, nominee: f.nominee, votes: counts.get(f.nominee) ?? 0 }))
+      .sort(byVotes);
+  }
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text; // nomes vêm dos votantes: nunca innerHTML
+    return node;
+  }
+
+  function plural(n, one, many) { return `${n} ${n === 1 ? one : many}`; }
+
+  function render(data) {
+    const phase = data.state.phase;
+    const view = mode === "auto" ? (phase === "nomination" ? "nomination" : "final") : mode;
+    const unit = view === "nomination" ? ["indicação", "indicações"] : ["voto", "votos"];
+
+    $("phase").textContent = PHASE_LABEL[phase] ?? phase;
+    $("totalLabel").textContent = view === "nomination" ? "Indicações recebidas" : "Votos recebidos";
+
+    let total = 0, covered = 0, closest = null;
+    const next = new Map();
+    const grid = $("grid");
+    grid.replaceChildren();
+
+    for (const category of data.categories) {
+      const list = rankingFor(data, view, category.id);
+      const sum = list.reduce((acc, r) => acc + r.votes, 0);
+      total += sum;
+      if (sum > 0) covered += 1;
+      if (list.length > 1 && list[0].votes > 0) {
+        const margin = list[0].votes - list[1].votes;
+        if (!closest || margin < closest.margin) closest = { margin, name: category.name };
+      }
+
+      const card = el("article", "card");
+      const head = el("div", "card-head");
+      head.append(el("h2", null, category.name), el("span", "count", plural(sum, ...unit)));
+      card.append(head);
+
+      if (list.length === 0) {
+        card.append(el("div", "empty", view === "nomination" ? "Nenhuma indicação ainda." : "Nenhum finalista ainda."));
+      } else {
+        const rows = el("ol", "rows");
+        const max = Math.max(1, list[0].votes);
+        const tied = list.length > 1 && list[0].votes > 0 && list[0].votes === list[1].votes;
+        list.slice(0, MAX_ROWS).forEach((r, i) => {
+          if (view === "nomination" && i === data.state.finalists_per_category) rows.append(el("hr", "cutoff"));
+          const isLeader = r.votes > 0 && r.votes === list[0].votes;
+          const row = el("li", "row" + (isLeader ? " leader" : ""));
+          const name = el("span", "name", r.nominee);
+          if (isLeader && tied) name.append(el("span", "tag tie", "empate"));
+          else if (i === 0 && r.votes > 0) name.append(el("span", "tag", view === "nomination" ? "mais indicado" : "vencendo"));
+          const votes = el("span", "votes", String(r.votes));
+          votes.append(el("small", null, sum ? `${Math.round((r.votes / sum) * 100)}%` : "0%"));
+          const bar = el("span", "bar");
+          const fill = el("span");
+          fill.style.width = `${(r.votes / max) * 100}%`;
+          bar.append(fill);
+          row.append(el("span", "rank", String(i + 1)), name, votes, bar);
+
+          const key = `${view}|${category.id}|${r.nominee}`;
+          next.set(key, r.votes);
+          if (previous.size && (previous.get(key) ?? 0) < r.votes) {
+            row.classList.add("bump");
+            setTimeout(() => row.classList.remove("bump"), 1600);
+          }
+          rows.append(row);
+        });
+        card.append(rows);
+        if (list.length > MAX_ROWS) card.append(el("div", "more", `+ ${list.length - MAX_ROWS} outros nomes`));
+        if (view === "nomination" && list.length > data.state.finalists_per_category) {
+          card.append(el("div", "more", `Acima da linha tracejada: os ${data.state.finalists_per_category} que viram finalistas.`));
+        }
+      }
+      grid.append(card);
+    }
+
+    previous = next;
+    $("total").textContent = String(total);
+    $("covered").replaceChildren(document.createTextNode(String(covered)), el("small", null, ` de ${data.categories.length}`));
+    $("closest").textContent = closest ? closest.name : "—";
+    if (closest) $("closest").append(el("small", null, closest.margin === 0 ? " · empate" : ` · ${plural(closest.margin, "voto", "votos")} de diferença`));
+  }
+
+  async function tick() {
+    clearTimeout(timer);
+    try {
+      const data = await load();
+      render(data);
+      $("error").hidden = true;
+      $("updated").textContent = "Atualizado às " + new Date().toLocaleTimeString("pt-BR");
+    } catch (err) {
+      $("error").hidden = false;
+      $("error").textContent = `Não foi possível ler o Supabase (${err.message}). Verifique a internet; a página tenta de novo sozinha.`;
+    }
+    if (!document.hidden) timer = setTimeout(tick, REFRESH_MS);
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    $("live").classList.toggle("paused", document.hidden);
+    if (!document.hidden) tick();
+  });
+
+  for (const [id, value] of [["modeAuto", "auto"], ["modeNomination", "nomination"], ["modeFinal", "final"]]) {
+    $(id).addEventListener("click", () => {
+      mode = value;
+      previous = new Map();
+      for (const b of document.querySelectorAll(".segmented button")) b.setAttribute("aria-pressed", String(b.id === id));
+      tick();
+    });
+  }
+
+  for (const button of document.querySelectorAll(".copy")) {
+    button.addEventListener("click", async () => {
+      const code = button.previousElementSibling;
+      try {
+        await navigator.clipboard.writeText(code.textContent);
+        button.textContent = "Copiado";
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        getSelection().removeAllRanges();
+        getSelection().addRange(range);
+        button.textContent = "Selecionado";
+      }
+      setTimeout(() => (button.textContent = "Copiar"), 1500);
+    });
+  }
+
+  tick();
+</script>
+</body>
+</html>
